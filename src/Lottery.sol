@@ -3,15 +3,16 @@ pragma solidity ^0.8.13;
 
 contract Lottery{
 
-    uint time_now; //현재 시간
+    uint time_now; //현재 시간 (24 hours 넘는지 안 넘는지 확인할 때 사용)
     uint16 win; //당첨 숫자
     uint256 received_msg_value;
     bool _isdraw;
     bool _isclaim;
-    address[] buy_address;
-    address[] winners;
-    mapping(address => uint16) public lotteries;
-    mapping(address => uint256) public balances;
+    uint16 alpha;
+    address[] buy_address; //로또 구매한 사람들 list
+    address[] winners; // 구매한 사람들 중 win number를 맞춘 사람들 list
+    mapping(address => uint16) public lotteries; // 구매한 사람들과 그들이 구매한 번호
+    mapping(address => uint256) public balances; // 구매한 사람들과 그들의 잔고
 
     constructor () {
         received_msg_value = 0;
@@ -19,6 +20,7 @@ contract Lottery{
         win = 6;
         _isdraw = false;
         _isclaim = false;
+        alpha = 1;
     }
 
     function buy(uint16 _value) public payable { //_value : 구매할 번호
@@ -33,8 +35,9 @@ contract Lottery{
         require(_isclaim == false);
         require(msg.value == 0.1 ether);
         require(time_now + 24 hours > block.timestamp);
-        require(lotteries[msg.sender] != _value+1); //_value 로 할 경우 _value가 0일 때 0+0=0이기 때문에 오류 발생
-        lotteries[msg.sender] = _value+1;
+        
+        require(lotteries[msg.sender] != _value + alpha); //_value 로 할 경우 _value가 0일 때 0+0=0이기 때문에 오류 발생
+        lotteries[msg.sender] = _value + alpha;
         received_msg_value += msg.value;
         buy_address.push(msg.sender); //구매한 address list에 push
     }
@@ -45,7 +48,7 @@ contract Lottery{
 
         for (uint i=0; i<buy_address.length; ++i){
             address who = buy_address[i];
-            if (lotteries[who]-1 == winningNumber()){
+            if (lotteries[who]-alpha == winningNumber()){
                 winners.push(who);
             }
         }
@@ -65,7 +68,7 @@ contract Lottery{
         _isclaim = true;
         uint amount = balances[msg.sender];
         balances[msg.sender] = 0;
-        //payable(msg.sender).transfer(amount); test 에서 msg.value로 받고 있음. 
+        //payable(msg.sender).transfer(amount); 사용시 오류 발생. test 에서 msg.value로 받고 있음. 
         payable(msg.sender).call{value: amount}("");
     }
 
