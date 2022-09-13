@@ -41,7 +41,7 @@ contract LotteryTest is Test {
         lottery.buy{value: 0.1 ether}(0);
     }
 
-    function testSellPhaseFullLength() public {
+    function testSellPhaseFullLength() public { //buy, draw, claim 모두 제한 시간이 정해져 있음. 다른 시간에 다른 단계를 하면 안 됨
         lottery.buy{value: 0.1 ether}(0);
         vm.warp(block.timestamp + 24 hours - 1);
         vm.prank(address(1));
@@ -88,7 +88,8 @@ contract LotteryTest is Test {
 
     function testClaimOnWin() public {
         uint16 winningNumber = getNextWinningNumber();
-        lottery.buy{value: 0.1 ether}(winningNumber); vm.warp(block.timestamp + 24 hours);
+        lottery.buy{value: 0.1 ether}(winningNumber); 
+        vm.warp(block.timestamp + 24 hours);
         uint256 expectedPayout = address(lottery).balance;
         lottery.draw();
         lottery.claim();
@@ -97,7 +98,8 @@ contract LotteryTest is Test {
 
     function testNoClaimOnLose() public {
         uint16 winningNumber = getNextWinningNumber();
-        lottery.buy{value: 0.1 ether}(winningNumber + 1); vm.warp(block.timestamp + 24 hours);
+        lottery.buy{value: 0.1 ether}(winningNumber + 1); 
+        vm.warp(block.timestamp + 24 hours);
         lottery.draw();
         lottery.claim();
         assertEq(received_msg_value, 0);
@@ -105,7 +107,8 @@ contract LotteryTest is Test {
 
     function testNoDrawDuringClaimPhase() public {
         uint16 winningNumber = getNextWinningNumber();
-        lottery.buy{value: 0.1 ether}(winningNumber); vm.warp(block.timestamp + 24 hours);
+        lottery.buy{value: 0.1 ether}(winningNumber); 
+        vm.warp(block.timestamp + 24 hours);
         lottery.draw();
         lottery.claim();
         vm.expectRevert();
@@ -114,12 +117,14 @@ contract LotteryTest is Test {
 
     function testRollover() public {
         uint16 winningNumber = getNextWinningNumber();
-        lottery.buy{value: 0.1 ether}(winningNumber + 1); vm.warp(block.timestamp + 24 hours);
+        lottery.buy{value: 0.1 ether}(winningNumber + 1); 
+        vm.warp(block.timestamp + 24 hours);
         lottery.draw();
         lottery.claim();
 
         winningNumber = getNextWinningNumber();
-        lottery.buy{value: 0.1 ether}(winningNumber); vm.warp(block.timestamp + 24 hours);
+        lottery.buy{value: 0.1 ether}(winningNumber); 
+        vm.warp(block.timestamp + 24 hours);
         lottery.draw();
         lottery.claim();
         assertEq(received_msg_value, 0.2 ether);
